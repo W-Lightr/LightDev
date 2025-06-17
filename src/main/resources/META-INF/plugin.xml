@@ -1,15 +1,39 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>com.github.wlightr.lightdev</id>
+    <id>cn.lightr.lightdev</id>
     <name>LightDev</name>
-    <vendor>w-lightr</vendor>
+    <vendor>Lightr</vendor>
+    <description><![CDATA[
+        <p>
+        @Lightr 自定义的模板生成器定义的模板生成器定义的模板生成器定义的模板生成器
+        </p>
+    ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
-
-    <resource-bundle>messages.MyBundle</resource-bundle>
+    <depends>com.intellij.database</depends>
+    <resource-bundle>locale.i18n</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.wlightr.lightdev.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-        <postStartupActivity implementation="com.github.wlightr.lightdev.startup.MyProjectActivity" />
+        <applicationConfigurable id="gl.lightr.settings.group"
+                                 displayName="LightDev设置1"/>
+        <groupConfigurable displayNameKey="LightDevSetting" id="gl.lightr.settings.group"
+                           descriptionKey="LightDevSettingDesc"/>
+
+        <applicationConfigurable instance="lightr.ui.view.TypeMapperSettingView"
+                                 groupId="gl.lightr.settings.group"
+                                 displayName="LightDev设置"/>
+
+        <notificationGroup id="LightrNotification"
+                           displayType="BALLOON"
+        />
+
+        <applicationService serviceImplementation="lightr.interfaces.impl.GlobalStateService"/>
+        <applicationService serviceImplementation="lightr.interfaces.impl.HistoryStateService"/>
     </extensions>
+
+    <actions>
+        <action id="GaN8373_Templatelightr" class="lightr.LightDevPluginsAction" text="生成CRUD代码（L）">
+            <add-to-group group-id="DatabaseViewPopupMenu" anchor="first"/>
+        </action>
+    </actions>
 </idea-plugin>

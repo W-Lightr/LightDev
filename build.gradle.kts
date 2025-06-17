@@ -18,11 +18,15 @@ version = providers.gradleProperty("pluginVersion").get()
 kotlin {
     jvmToolchain(21)
 }
-
+sourceSets {
+    main {
+        java.srcDirs("src/main/kotlin")
+    }
+}
 // Configure project's dependencies
 repositories {
     mavenCentral()
-
+//    maven(url = "https://maven.aliyun.com/repository/central")
     // IntelliJ Platform Gradle Plugin Repositories Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-repositories-extension.html
     intellijPlatform {
         defaultRepositories()
@@ -43,13 +47,16 @@ dependencies {
 
         // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file for plugin from JetBrains Marketplace.
         plugins(providers.gradleProperty("platformPlugins").map { it.split(',') })
-
+        bundledPlugins("com.intellij.database")
         testFramework(TestFrameworkType.Platform)
     }
+    implementation("org.freemarker:freemarker:2.3.32")
+    implementation(kotlin("stdlib-jdk8"))
 }
 
 // Configure IntelliJ Platform Gradle Plugin - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-extension.html
 intellijPlatform {
+    instrumentCode = true
     pluginConfiguration {
         name = providers.gradleProperty("pluginName")
         version = providers.gradleProperty("pluginVersion")
