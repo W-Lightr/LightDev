@@ -50,7 +50,7 @@ dependencies {
         bundledPlugins("com.intellij.database")
         testFramework(TestFrameworkType.Platform)
     }
-    implementation("org.freemarker:freemarker:2.3.32")
+    implementation("org.freemarker:freemarker:2.3.34")
     implementation(kotlin("stdlib-jdk8"))
 }
 
