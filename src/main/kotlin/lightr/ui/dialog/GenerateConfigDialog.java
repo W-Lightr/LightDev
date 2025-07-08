@@ -82,7 +82,7 @@ public class GenerateConfigDialog extends DialogWrapper {
         AtomicBoolean hasCloseDialog = new AtomicBoolean(true);
         try {
             if (scopeState.getSelectedTables().isEmpty()) {
-                Messages.showErrorDialog("Table is required", "Error");
+                Messages.showErrorDialog("表是必需的", "错误");
                 return;
             }
 

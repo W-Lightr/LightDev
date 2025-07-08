@@ -16,7 +16,7 @@ import java.io.StringWriter
 class LightDevPluginsAction : AnAction() {
 
     override fun getActionUpdateThread(): ActionUpdateThread {
-        return super.getActionUpdateThread()
+        return ActionUpdateThread.EDT
     }
 
     override fun update(e: AnActionEvent) {
@@ -32,7 +32,7 @@ class LightDevPluginsAction : AnAction() {
 
         val tablelightr = GenerateConfigDialog(e)
 
-        tablelightr.title = "Templatelightr"
+        tablelightr.title = "生成"
         tablelightr.setSize(800, 600)
 
         tablelightr.show()

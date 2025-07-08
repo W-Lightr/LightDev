@@ -12,16 +12,20 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.database</depends>
     <resource-bundle>locale.i18n</resource-bundle>
-
     <extensions defaultExtensionNs="com.intellij">
-        <applicationConfigurable id="gl.lightr.settings.group"
-                                 displayName="LightDev设置1"/>
         <groupConfigurable displayNameKey="LightDevSetting" id="gl.lightr.settings.group"
                            descriptionKey="LightDevSettingDesc"/>
 
-        <applicationConfigurable instance="lightr.ui.view.TypeMapperSettingView"
+        <applicationConfigurable instance="lightr.ui.view.LightDevMainSettingView.LightDevMainSettingView"
+                                 id="gl.lightr.settings.lightdevmainsettingview1"
                                  groupId="gl.lightr.settings.group"
-                                 displayName="LightDev设置"/>
+                                 displayNameKey="dyg"/>
+        <applicationConfigurable
+                instance="lightr.ui.view.TypeMapperSettingView"
+                id="gl.lightr.settings.typemapper"
+                displayNameKey="lxys"
+                groupId="gl.lightr.settings.group"/>
+
 
         <notificationGroup id="LightrNotification"
                            displayType="BALLOON"
@@ -32,7 +36,7 @@
     </extensions>
 
     <actions>
-        <action id="GaN8373_Templatelightr" class="lightr.LightDevPluginsAction" text="生成CRUD代码（L）">
+        <action id="LightDevPluginsAction" class="lightr.LightDevPluginsAction">
             <add-to-group group-id="DatabaseViewPopupMenu" anchor="first"/>
         </action>
     </actions>

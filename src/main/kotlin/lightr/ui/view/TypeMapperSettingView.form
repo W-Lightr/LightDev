@@ -27,7 +27,7 @@
               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text value="MappingGroup"/>
+              <text value="映射文件"/>
             </properties>
           </component>
           <hspacer id="ea018">
@@ -81,7 +81,7 @@
               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text value="New"/>
+              <text value="新建"/>
             </properties>
           </component>
           <component id="ace40" class="javax.swing.JButton" binding="renameButton" default-binding="true">
@@ -89,7 +89,7 @@
               <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text value="Rename"/>
+              <text value="重命名"/>
             </properties>
           </component>
           <component id="6b997" class="javax.swing.JButton" binding="copyButton" default-binding="true">
@@ -97,7 +97,7 @@
               <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text value="Copy"/>
+              <text value="复制"/>
             </properties>
           </component>
           <component id="9428c" class="javax.swing.JButton" binding="delButton" default-binding="true">
@@ -105,7 +105,7 @@
               <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text value="Del"/>
+              <text value="删除"/>
             </properties>
           </component>
         </children>
@@ -123,7 +123,7 @@
               <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text value="NewRow"/>
+              <text value="新建行"/>
             </properties>
           </component>
           <component id="f2fce" class="javax.swing.JButton" binding="delRowButton" default-binding="true">
@@ -131,7 +131,7 @@
               <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text value="DelRow"/>
+              <text value="删除行"/>
             </properties>
           </component>
           <vspacer id="ddf41">
@@ -149,7 +149,7 @@
               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text value="Import"/>
+              <text value="导入"/>
             </properties>
           </component>
           <component id="77bbf" class="javax.swing.JButton" binding="exportButton" default-binding="true">
@@ -157,7 +157,7 @@
               <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <text value="Export"/>
+              <text value="导出"/>
             </properties>
           </component>
         </children>
