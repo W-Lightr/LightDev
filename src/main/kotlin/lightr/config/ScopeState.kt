@@ -71,6 +71,18 @@ class ScopeState(
     private var templateFilePath: Map<String, Path>? = null
 
     /**
+     * 每个模板文件的自定义生成路径
+     */
+    private var templateCustomPaths: MutableMap<String, String> = mutableMapOf()
+
+    /**
+     * 获取所有模板的自定义路径
+     */
+    fun getAllTemplateCustomPaths(): Map<String, String> {
+        return templateCustomPaths.toMap()
+    }
+
+    /**
      * 选择模板文件的组件
      */
     private var selectTemplateComponent: ListCheckboxComponent? = null
@@ -86,5 +98,26 @@ class ScopeState(
         return selectedItems?.mapNotNull {
             templateFilePath?.get(it)
         }?.toSet() ?: setOf()
+    }
+
+    /**
+     * 设置模板的自定义生成路径
+     */
+    fun setTemplateCustomPath(templateName: String, customPath: String) {
+        templateCustomPaths[templateName] = customPath
+    }
+
+    /**
+     * 获取模板的自定义生成路径
+     */
+    fun getTemplateCustomPath(templateName: String): String? {
+        return templateCustomPaths[templateName]
+    }
+
+    /**
+     * 清除模板的自定义生成路径
+     */
+    fun clearTemplateCustomPath(templateName: String) {
+        templateCustomPaths.remove(templateName)
     }
 }

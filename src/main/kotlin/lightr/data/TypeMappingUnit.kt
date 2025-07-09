@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAlias
 import lightr.MapperAction
 
 class TypeMappingUnit : Comparable<TypeMappingUnit> {
-
+    constructor() // 无参构造函数，用于 Jackson 反序列化
     @JsonAlias("action", "Action")
     var action: MapperAction = MapperAction.Eq
     @JsonAlias("rule", "Rule")
@@ -18,13 +18,12 @@ class TypeMappingUnit : Comparable<TypeMappingUnit> {
 
     constructor(action: MapperAction, rule: String, type: String): this(action, rule, type,null)
 
-    constructor(action: MapperAction, rule: String, type: String, sortIndex: Int?){
+    constructor(action: MapperAction, rule: String, type: String, sortIndex: Int?) {
         this.action = action
         this.rule = rule
         this.type = type
         this.sortIndex = sortIndex
     }
-    constructor()
 
     companion object {
         @JvmStatic
