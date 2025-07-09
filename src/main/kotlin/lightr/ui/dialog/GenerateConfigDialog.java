@@ -13,11 +13,14 @@ import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.ui.components.JBTextField;
 import com.intellij.util.ArrayUtil;
 import freemarker.core.StopException;
+import kotlin.Unit;
 import lightr.config.ScopeState;
 import lightr.data.GenerateContext;
 import lightr.data.ScoredMember;
+import lightr.data.TemplatePath;
 import lightr.data.TemplateContextWrapper;
 import lightr.data.table.TableData;
 import lightr.interfaces.IHistorySelectedDelegate;
@@ -35,6 +38,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
@@ -69,6 +73,7 @@ public class GenerateConfigDialog extends DialogWrapper {
     private JButton selectAllButton;
     private JButton clearSelectAllButton;
     private JButton tableSelectButton;
+    private JButton savePathButton;
     private JTextField namespaceTextField;
     private JCheckBox namespaceLockCheckBox;
 
@@ -86,7 +91,7 @@ public class GenerateConfigDialog extends DialogWrapper {
                 return;
             }
 
-            var globalState = GlobalStateService.getInstance().getState();
+            var currentGlobalState = GlobalStateService.getInstance().getState();
 
             var fileNameMapTemplate = new HashMap<Path, String>();
             for (var path : scopeState.getSelectedTemplatePath()) {
@@ -96,7 +101,7 @@ public class GenerateConfigDialog extends DialogWrapper {
                 }
             }
 
-            var mapperTemplates = globalState.getTypeMappingGroupMap().getOrDefault(scopeState.getSelectTypeMapping(), Set.of()).stream().sorted().toList();
+            var mapperTemplates = currentGlobalState.getTypeMappingGroupMap().getOrDefault(scopeState.getSelectTypeMapping(), Set.of()).stream().sorted().toList();
             if (mapperTemplates.isEmpty()) {
                 Messages.showErrorDialog("TypeMapper is empty", "Error");
                 return;
@@ -144,14 +149,31 @@ public class GenerateConfigDialog extends DialogWrapper {
                         var fileName = StringUtil.isEmpty(templateConfig.getFileName())
                                 ? entry.getKey().getFileName().toString() : templateConfig.getFileName();
 
-                        var outFilePath = StringUtil.isEmpty(templateConfig.getDir())
-                                ? StaticUtil.extractDirAfterName(templatePath.substring(0, templatePath.lastIndexOf(FileSystems.getDefault().getSeparator()) + 1), String.valueOf(scopeState.getTemplateGroupPath()))
-                                .split("[/\\\\]")
-                                : templateConfig.getDir().split("[/\\\\]");
+                        var templateName = StaticUtil.extractDirAfterName(entry.getKey().toString(), String.valueOf(scopeState.getTemplateGroupPath()));
+                        var customPath = scopeState.getTemplateCustomPath(templateName);
 
-                        outFilePath = ArrayUtil.append(outFilePath, fileName);
+                        String basePath = scopeState.getPath();
+                        String relativePath;
 
-                        var outPath = Path.of(scopeState.getPath(), outFilePath);
+                        if (customPath != null) {
+                            relativePath = customPath;
+                        } else if (StringUtil.isEmpty(templateConfig.getDir())) {
+                            relativePath = StaticUtil.extractDirAfterName(
+                                templatePath.substring(0, templatePath.lastIndexOf(FileSystems.getDefault().getSeparator()) + 1),
+                                String.valueOf(scopeState.getTemplateGroupPath())
+                            );
+                        } else {
+                            relativePath = templateConfig.getDir();
+                        }
+
+                        // 规范化路径分隔符
+                        relativePath = relativePath.replace('\\', '/');
+                        // 确保相对路径不以斜杠开头
+                        relativePath = relativePath.startsWith("/") ? relativePath.substring(1) : relativePath;
+                        // 确保相对路径以斜杠结尾
+                        relativePath = relativePath.endsWith("/") ? relativePath : relativePath + "/";
+
+                        var outPath = Path.of(basePath).resolve(relativePath).resolve(fileName).normalize();
 
                         var file = outPath.toFile();
                         if (!file.exists()) {
@@ -231,7 +253,42 @@ public class GenerateConfigDialog extends DialogWrapper {
                 .map(x -> StaticUtil.extractDirAfterName(x.getPath(), dir.toString()))
                 .collect(Collectors.toList());
 
-        var tables = new ListCheckboxComponent(new DoubleColumnLayout(), fileNames);
+        // 获取保存的模板路径
+        var currentGlobalState = GlobalStateService.getInstance().getState();
+        var savedPaths = currentGlobalState.getTemplatePaths();
+
+        var tables = new ListCheckboxComponent(
+            new DoubleColumnLayout(),
+            fileNames,
+            true,
+            (templateName, customPath) -> {
+                scopeState.setTemplateCustomPath(templateName, customPath);
+                // 保存模板路径
+                var newTemplatePath = new TemplatePath(templateName, customPath);
+                currentGlobalState.getTemplatePaths().remove(newTemplatePath);
+                if (customPath != null && !customPath.isBlank()) {
+                    currentGlobalState.getTemplatePaths().add(newTemplatePath);
+                }
+                GlobalStateService.getInstance().loadState(currentGlobalState);
+                return Unit.INSTANCE;
+            }
+        );
+
+        // 设置已保存的路径
+        for (var savedPath : savedPaths) {
+            if (savedPath.getTemplateName() != null && savedPath.getPath() != null) {
+                scopeState.setTemplateCustomPath(savedPath.getTemplateName(), savedPath.getPath());
+                // 在界面上显示已保存的路径
+                var pathInput = ((JBTextField)((Container)tables).getComponent(tables.getCheckBoxList().stream()
+                    .filter(x -> x.getText().equals(savedPath.getTemplateName()))
+                    .findFirst()
+                    .map(x -> ((Container)tables).getComponentZOrder(x) + 1)
+                    .orElse(-1)));
+                if (pathInput != null) {
+                    pathInput.setText(savedPath.getPath());
+                }
+            }
+        }
 
         for (var actionListener : selectAllButton.getActionListeners()) {
             selectAllButton.removeActionListener(actionListener);
@@ -242,7 +299,26 @@ public class GenerateConfigDialog extends DialogWrapper {
             clearSelectAllButton.removeActionListener(actionListener);
         }
         clearSelectAllButton.addActionListener(e -> Objects.requireNonNull(tables.getCheckBoxList()).forEach(x -> x.setSelected(false)));
-        generateTemplatePanel.setViewportView(tables);
+        // 添加保存路径按钮
+        savePathButton = new JButton("保存路径配置");
+        savePathButton.addActionListener(e -> {
+            var customPaths = scopeState.getAllTemplateCustomPaths();
+            currentGlobalState.getTemplatePaths().clear();
+            for (var entry : customPaths.entrySet()) {
+                if (entry.getValue() != null && !entry.getValue().isBlank()) {
+                    currentGlobalState.getTemplatePaths().add(new TemplatePath(entry.getKey(), entry.getValue()));
+                }
+            }
+            GlobalStateService.getInstance().loadState(currentGlobalState);
+            StaticUtil.showWarningNotification("保存路径配置", "模板路径配置已保存", project, NotificationType.INFORMATION);
+        });
+
+        var panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.add(tables);
+        panel.add(savePathButton);
+
+        generateTemplatePanel.setViewportView(panel);
 
         scopeState.setTemplateFilePath(paths, tables);
 //            Objects.requireNonNull(scopeState.getTemplateGroup()).setSelectedItem(templatePath);
@@ -268,16 +344,21 @@ public class GenerateConfigDialog extends DialogWrapper {
             model.addElement(table);
         }
 
-        var tables = new ListCheckboxComponent(new SingleColumnLayout(), allTables.values().stream().sorted((a, b) -> {
-            if (a.getDasParent() == null) {
-                return 1;
-            }
-            if (b.getDasParent() == null) {
-                return -1;
-            }
-            var i = b.getDasParent().getName().compareTo(a.getDasParent().getName());
-            return i == 0 ? b.getName().compareTo(a.getName()) : i;
-        }).map(DasNamed::getName).toList());
+        var tables = new ListCheckboxComponent(
+            new SingleColumnLayout(),
+            allTables.values().stream().sorted((a, b) -> {
+                if (a.getDasParent() == null) {
+                    return 1;
+                }
+                if (b.getDasParent() == null) {
+                    return -1;
+                }
+                var i = b.getDasParent().getName().compareTo(a.getDasParent().getName());
+                return i == 0 ? b.getName().compareTo(a.getName()) : i;
+            }).map(DasNamed::getName).toList(),
+            false,
+            null
+        );
 
         Objects.requireNonNull(tables.getCheckBoxList()).forEach(x -> {
             if (selectTables.contains(x.getText())) {
@@ -354,8 +435,8 @@ public class GenerateConfigDialog extends DialogWrapper {
 
             @Override
             public @NotNull Collection<String> getSelectList() {
-                var globalState = GlobalStateService.getInstance().getState();
-                return globalState.getTypeMappingGroupMap().keySet();
+                var currentGlobalState = GlobalStateService.getInstance().getState();
+                return currentGlobalState.getTypeMappingGroupMap().keySet();
             }
 
             @Override

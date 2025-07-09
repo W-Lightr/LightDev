@@ -11,7 +11,7 @@ import java.io.StringWriter
 import java.nio.file.FileSystems
 
 object StaticUtil {
-    private const val NOTIFICATION_GROUP_ID = "TemplatelightrNotification"
+    private const val NOTIFICATION_GROUP_ID = "LightrNotification"
 
 
     @JvmStatic
