@@ -1,9 +1,5 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <applicationListeners>
-        <listener class="lightr.listeners.PluginStartupActivity" topic="com.intellij.ide.AppLifecycleListener"/>
-    </applicationListeners>
-
     <id>cn.lightr.lightdev</id>
     <name>LightDev</name>
     <vendor>Lightr</vendor>

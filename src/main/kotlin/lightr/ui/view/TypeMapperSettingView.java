@@ -1,6 +1,7 @@
 package lightr.ui.view;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.intellij.DynamicBundle;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.fileChooser.FileChooser;
 import com.intellij.openapi.fileChooser.FileChooserDescriptor;
@@ -23,10 +24,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class TypeMapperSettingView implements Configurable {
-    private final GlobalState globalState;
+    private GlobalState uiState;
 
     private JPanel panel1;
     private JComboBox<String> typeMappingSelect;
@@ -48,27 +50,49 @@ public class TypeMapperSettingView implements Configurable {
 
     @Override
     public boolean isModified() {
-        return true;
+        var originalState = GlobalStateService.getInstance().getState();
+        return !Objects.equals(
+                StaticUtil.getJSON().valueToTree(uiState.getTypeMappingGroupMap()),
+                StaticUtil.getJSON().valueToTree(originalState.getTypeMappingGroupMap())
+        );
     }
 
     @Override
     public void apply() {
-        GlobalStateService.getInstance().loadState(globalState);
+        var originalState = GlobalStateService.getInstance().getState();
+        originalState.setTypeMappingGroupMap(uiState.getTypeMappingGroupMap());
+        GlobalStateService.getInstance().loadState(originalState);
     }
 
     @Override
     public @NlsContexts.ConfigurableName String getDisplayName() {
-        return "TemplatelightrSettings";
+        return DynamicBundle.getBundle("locale.i18n").getString("lxys");
     }
 
     public TypeMapperSettingView() {
-        this.globalState = GlobalStateService.getInstance().getState();
+        this.uiState = deepCopy(GlobalStateService.getInstance().getState());
 
         initButton();
 
         initTypeMappingSelect();
         refreshTypeMappingTable();
+    }
 
+    @Override
+    public void reset() {
+        this.uiState = deepCopy(GlobalStateService.getInstance().getState());
+        initTypeMappingSelect();
+        refreshTypeMappingTable();
+    }
+
+    private GlobalState deepCopy(GlobalState original) {
+        try {
+            var json = StaticUtil.getJSON().writeValueAsString(original);
+            return StaticUtil.getJSON().readValue(json, GlobalState.class);
+        } catch (IOException e) {
+            // Fallback to a new state if deep copy fails
+            return new GlobalState();
+        }
     }
 
     private void initButton() {
@@ -77,16 +101,16 @@ public class TypeMapperSettingView implements Configurable {
 
             typeMappingSelect.addItem(item);
             typeMappingSelect.setSelectedItem(item);
-            globalState.getTypeMappingGroupMap().put(item, new HashSet<>());
+            uiState.getTypeMappingGroupMap().put(item, new HashSet<>());
         });
 
         copyButton.addActionListener(e -> {
             var selectedItem = typeMappingSelect.getSelectedItem();
             if (selectedItem instanceof String label) {
                 var newItem = label + "_copy";
-                var typeMappers = globalState.getTypeMappingGroupMap().computeIfAbsent(label, k -> new HashSet<>());
+                var typeMappers = uiState.getTypeMappingGroupMap().computeIfAbsent(label, k -> new HashSet<>());
                 var collect = typeMappers.stream().map(TypeMappingUnit::of).collect(Collectors.toSet());
-                globalState.getTypeMappingGroupMap().put(newItem, collect);
+                uiState.getTypeMappingGroupMap().put(newItem, collect);
                 typeMappingSelect.addItem(newItem);
             }
         });
@@ -95,7 +119,7 @@ public class TypeMapperSettingView implements Configurable {
             if (newLabel != null && !newLabel.trim().isEmpty()) {
                 var selectedItem = typeMappingSelect.getSelectedItem();
                 if (selectedItem instanceof String label) {
-                    var groupMapTemplate = globalState.getTypeMappingGroupMap();
+                    var groupMapTemplate = uiState.getTypeMappingGroupMap();
                     var typeMappers = groupMapTemplate.computeIfAbsent(label, k -> new HashSet<>());
 
                     groupMapTemplate.put(newLabel, typeMappers);
@@ -112,7 +136,7 @@ public class TypeMapperSettingView implements Configurable {
             var selectedItem = typeMappingSelect.getSelectedItem();
 
             if (selectedItem instanceof String label) {
-                globalState.getTypeMappingGroupMap().remove(label);
+                uiState.getTypeMappingGroupMap().remove(label);
                 typeMappingSelect.removeItemAt(typeMappingSelect.getSelectedIndex());
             }
         });
@@ -136,7 +160,7 @@ public class TypeMapperSettingView implements Configurable {
                         var typeMappers = StaticUtil.getJSON().readValue(file.getInputStream(), new TypeReference<HashSet<TypeMappingUnit>>() {
                         });
 
-                        var groupMapTemplate = globalState.getTypeMappingGroupMap();
+                        var groupMapTemplate = uiState.getTypeMappingGroupMap();
                         if (!groupMapTemplate.containsKey(file.getName())) {
                             typeMappingSelect.insertItemAt(file.getName(), 0);
                         }
@@ -168,7 +192,7 @@ public class TypeMapperSettingView implements Configurable {
             }
 
             var path = virtualFile.getPath();
-            var typeMappers = globalState.getTypeMappingGroupMap().get(item);
+            var typeMappers = uiState.getTypeMappingGroupMap().get(item);
             if (typeMappers == null) {
                 return;
             }
@@ -188,7 +212,8 @@ public class TypeMapperSettingView implements Configurable {
     }
 
     private void initTypeMappingSelect() {
-        globalState.getTypeMappingGroupMap().keySet().forEach(item -> typeMappingSelect.addItem(item));
+        typeMappingSelect.removeAllItems();
+        uiState.getTypeMappingGroupMap().keySet().forEach(item -> typeMappingSelect.addItem(item));
         typeMappingSelect.addItemListener(e -> refreshTypeMappingTable());
     }
 
@@ -196,7 +221,7 @@ public class TypeMapperSettingView implements Configurable {
         TableRowData tableRowData;
 
         if (typeMappingSelect.getSelectedItem() instanceof String typeKey) {
-            var typeMappers = globalState.getTypeMappingGroupMap().computeIfAbsent(typeKey, k -> new HashSet<>());
+            var typeMappers = uiState.getTypeMappingGroupMap().computeIfAbsent(typeKey, k -> new HashSet<>());
             tableRowData = new TableRowData(typeMappers.stream().sorted().toList());
         } else {
             tableRowData = new TableRowData(new ArrayList<>());
@@ -212,7 +237,7 @@ public class TypeMapperSettingView implements Configurable {
         }
         newRowButton.addActionListener(e -> {
             if (typeMappingSelect.getSelectedItem() instanceof String str) {
-                var typeMappers = globalState.getTypeMappingGroupMap().computeIfAbsent(str, k -> new HashSet<>());
+                var typeMappers = uiState.getTypeMappingGroupMap().computeIfAbsent(str, k -> new HashSet<>());
                 typeMappers.add(TypeMappingUnit.newDefault());
                 refreshTypeMappingTable();
             }
@@ -223,7 +248,7 @@ public class TypeMapperSettingView implements Configurable {
         }
         delRowButton.addActionListener(e -> {
             if (typeMappingSelect.getSelectedItem() instanceof String str) {
-                var typeMappers = globalState.getTypeMappingGroupMap().computeIfAbsent(str, k -> new HashSet<>());
+                var typeMappers = uiState.getTypeMappingGroupMap().computeIfAbsent(str, k -> new HashSet<>());
                 var selectedRow = typeMappingTable.getSelectedRow();
                 if (selectedRow >= 0) {
                     typeMappers.remove(tableRowData.data.get(selectedRow));

@@ -49,6 +49,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -126,6 +128,7 @@ public class GenerateConfigDialog extends DialogWrapper {
                     try {
                         // region process template context
                         var context = new HashMap<String, Object>();
+                        context.put("author", GlobalStateService.getInstance().getState().getAuthor());
                         context.put("context", templateSharedContext);
                         context.put("namespace", namespaceTextField.getText());
                         context.put("dbms", datasource.getDbms());
@@ -134,7 +137,8 @@ public class GenerateConfigDialog extends DialogWrapper {
                         context.put("columns", tableData.getColumns());
                         context.put("NameUtil", NameUtil.INSTANCE);
                         context.put("MapperUtil", mapperUtil);
-
+                        context.put("date", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+                        context.put("dateTime", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
                         String sourceCode;
                         try (var bo = new ByteArrayOutputStream()) {
                             TemplateUtil.evaluate(context, new OutputStreamWriter(bo, StandardCharsets.UTF_8), templatePath, entry.getValue());
