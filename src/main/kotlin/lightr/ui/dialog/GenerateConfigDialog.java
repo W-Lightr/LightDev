@@ -321,15 +321,9 @@ public class GenerateConfigDialog extends DialogWrapper {
         //     StaticUtil.showWarningNotification("保存路径配置", "模板路径配置已保存", project, NotificationType.INFORMATION);
         // });
 
-        var panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.add(tables);
-        // panel.add(savePathButton);
-
-        // 设置生成模板面板的首选大小
-        panel.setPreferredSize(new Dimension(600, 400));
-        generateTemplatePanel.setViewportView(panel);
-        generateTemplatePanel.setPreferredSize(new Dimension(620, 420));
+        // The ListCheckboxComponent now implements Scrollable, so it can be set as the viewport view directly.
+        // This allows the scroll pane to correctly manage the component's width.
+        generateTemplatePanel.setViewportView(tables);
 
         scopeState.setTemplateFilePath(paths, tables);
 //            Objects.requireNonNull(scopeState.getTemplateGroup()).setSelectedItem(templatePath);

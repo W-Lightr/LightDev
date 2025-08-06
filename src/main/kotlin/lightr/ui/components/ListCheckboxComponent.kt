@@ -10,8 +10,11 @@ import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import javax.swing.AbstractButton
 import javax.swing.JButton
+import java.awt.Dimension
+import java.awt.Rectangle
 import javax.swing.JPanel
 import javax.swing.JScrollPane
+import javax.swing.Scrollable
 
 /**
  * 列表复选框组件
@@ -35,7 +38,7 @@ class ListCheckboxComponent(
      */
     private val onPathChange: ((String, String) -> Unit)? = null
 ) :
-    JPanel(GridBagLayout()) {
+    JPanel(GridBagLayout()), Scrollable {
     /**
      * 复选框列表
      */
@@ -67,7 +70,7 @@ class ListCheckboxComponent(
         var row = 0
         checkBoxList = items.map { item ->
             val checkBox = JBCheckBox(item)
-            
+
             gbc.gridx = 0
             gbc.gridy = row
             gbc.weightx = 0.3
@@ -76,7 +79,7 @@ class ListCheckboxComponent(
             if (showPathInput) {
                 val pathInput = JBTextField().apply {
                     toolTipText = "输入生成路径"
-                    addCaretListener { 
+                    addCaretListener {
                         onPathChange?.invoke(item, text)
                     }
                 }
@@ -96,11 +99,11 @@ class ListCheckboxComponent(
                 }
 
                 gbc.gridx = 1
-                gbc.weightx = 0.6
+                gbc.weightx = 0.5
                 add(pathInput, gbc)
 
                 gbc.gridx = 2
-                gbc.weightx = 0.1
+                gbc.weightx = 0.2
                 add(chooseButton, gbc)
             }
 
@@ -133,4 +136,14 @@ class ListCheckboxComponent(
             }
             return result
         }
+
+    override fun getPreferredScrollableViewportSize(): Dimension = preferredSize
+
+    override fun getScrollableUnitIncrement(visibleRect: Rectangle, orientation: Int, direction: Int): Int = 16
+
+    override fun getScrollableBlockIncrement(visibleRect: Rectangle, orientation: Int, direction: Int): Int = 16
+
+    override fun getScrollableTracksViewportWidth(): Boolean = true
+
+    override fun getScrollableTracksViewportHeight(): Boolean = false
 }
