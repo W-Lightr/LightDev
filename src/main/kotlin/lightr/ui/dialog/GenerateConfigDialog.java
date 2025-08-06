@@ -280,17 +280,20 @@ public class GenerateConfigDialog extends DialogWrapper {
         );
 
         // 设置已保存的路径
-        for (var savedPath : savedPaths) {
+        for (var savedPath : new ArrayList<>(savedPaths)) {
             if (savedPath.getTemplateName() != null && savedPath.getPath() != null) {
                 scopeState.setTemplateCustomPath(savedPath.getTemplateName(), savedPath.getPath());
                 // 在界面上显示已保存的路径
-                var pathInput = ((JBTextField)((Container)tables).getComponent(tables.getCheckBoxList().stream()
-                    .filter(x -> x.getText().equals(savedPath.getTemplateName()))
-                    .findFirst()
-                    .map(x -> ((Container)tables).getComponentZOrder(x) + 1)
-                    .orElse(-1)));
-                if (pathInput != null) {
-                    pathInput.setText(savedPath.getPath());
+                var componentIndex = tables.getCheckBoxList().stream()
+                        .filter(x -> x.getText().equals(savedPath.getTemplateName()))
+                        .findFirst()
+                        .map(x -> ((Container) tables).getComponentZOrder(x) + 1)
+                        .orElse(-1);
+                if (componentIndex != -1) {
+                    var component = ((Container) tables).getComponent(componentIndex);
+                    if (component instanceof JBTextField) {
+                        ((JBTextField) component).setText(savedPath.getPath());
+                    }
                 }
             }
         }

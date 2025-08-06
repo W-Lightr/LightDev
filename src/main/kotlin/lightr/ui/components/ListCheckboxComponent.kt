@@ -107,6 +107,12 @@ class ListCheckboxComponent(
             row++
             checkBox
         }
+
+        // Add a filler component to push everything to the top
+        gbc.gridy = row
+        gbc.weighty = 1.0
+        gbc.fill = GridBagConstraints.VERTICAL
+        add(JPanel(), gbc)
     }
 
     val selectedItems: List<String>
