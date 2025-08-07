@@ -89,7 +89,7 @@ object TemplateUtil {
     @JvmStatic
     fun convertType(v: String, typeMappingUnits: Collection<TypeMappingUnit>): String? {
         for (typeMapper in typeMappingUnits.sorted()) {
-            val valueLowercase = v.lowercase()
+            val valueLowercase = v.lowercase().replace(Regex("\\([^)]*\\)"), "")
             var rule = typeMapper.rule
 
             if (typeMapper.action == MapperAction.Regex

@@ -22,6 +22,7 @@ import lightr.data.GenerateContext;
 import lightr.data.ScoredMember;
 import lightr.data.TemplatePath;
 import lightr.data.TemplateContextWrapper;
+import lightr.data.table.ColumnData;
 import lightr.data.table.TableData;
 import lightr.interfaces.IHistorySelectedDelegate;
 import lightr.interfaces.impl.GlobalStateService;
@@ -120,6 +121,7 @@ public class GenerateConfigDialog extends DialogWrapper {
             var templateSharedContext = new TemplateContextWrapper();
 
             // process template
+            HistoryStateService.getInstance().getState().setNamespace(namespaceTextField.getText());
             scopeState.getSelectedTables().stream().map(x -> new TableData(x, dbContext)).forEach(tableData -> {
 
                 fileNameMapTemplate.entrySet().stream().sorted((Map.Entry.comparingByKey())).forEachOrdered(entry -> {
@@ -144,7 +146,9 @@ public class GenerateConfigDialog extends DialogWrapper {
                             TemplateUtil.evaluate(context, new OutputStreamWriter(bo, StandardCharsets.UTF_8), templatePath, entry.getValue());
                             sourceCode = bo.toString(StandardCharsets.UTF_8);
                         }
-
+                        for (ColumnData column : tableData.getColumns()) {
+                            System.out.println(column.getMapperType()+" - " + column.tryMapValue() + " - "+ column.getRawDefaultValue());
+                        }
                         var extracted = TemplateUtil.extractConfig(TemplateUtil.SPLIT_TAG_REGEX, sourceCode);
                         var templateConfig = extracted.component1();
                         sourceCode = extracted.component2();
@@ -477,7 +481,8 @@ public class GenerateConfigDialog extends DialogWrapper {
 
         templateChoose.addActionListener(e -> fileChooserConsumer.apply(e).ifPresent(x -> scopeState.setTemplateGroupPath(x.getPath())));
         pathInput.setText(Objects.requireNonNull(project).getBasePath());
-        namespaceTextField.setText(project.getName());
+        var historyState = HistoryStateService.getInstance().getState();
+        namespaceTextField.setText(StringUtil.defaultIfEmpty(historyState.getNamespace(),project.getName()));
         namespaceTextField.addFocusListener(new FocusListener() {
             @Override
             public void focusGained(FocusEvent e) {
