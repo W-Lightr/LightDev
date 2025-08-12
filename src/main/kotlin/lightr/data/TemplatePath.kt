@@ -1,6 +1,6 @@
 package lightr.data
 
-class TemplatePath {
+class TemplatePath : Comparable<TemplatePath> {
     var templateName: String? = null
     var path: String? = null
 
@@ -11,6 +11,10 @@ class TemplatePath {
 
     @Deprecated(message = "Framework internal use only", level = DeprecationLevel.ERROR)
     constructor()
+
+    override fun compareTo(other: TemplatePath): Int {
+        return templateName?.compareTo(other.templateName ?: "") ?: 0
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
