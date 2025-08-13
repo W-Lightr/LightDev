@@ -29,6 +29,7 @@ import lightr.interfaces.impl.GlobalStateService;
 import lightr.interfaces.impl.HistoryStateService;
 import lightr.ui.components.ListCheckboxComponent;
 import lightr.ui.components.SelectionHistoryComboBox;
+import lightr.ui.components.TemplateGroupSelector;
 import lightr.ui.layout.DoubleColumnLayout;
 import lightr.ui.layout.SingleColumnLayout;
 import lightr.util.*;
@@ -82,7 +83,7 @@ public class GenerateConfigDialog extends DialogWrapper {
     private JLabel pathLabel;
     private JTextField pathInput;
     private JButton chooseButton;
-    private JComboBox<String> templateGroupSelected;
+    private TemplateGroupSelector templateGroupSelected;
     private JComboBox<String> typeMappingSelected;
     private JScrollPane tableScrollPanel;
     private JScrollPane generateTemplatePanel;
@@ -632,7 +633,7 @@ public class GenerateConfigDialog extends DialogWrapper {
     }
 
     private void createUIComponents() {
-        templateGroupSelected = new SelectionHistoryComboBox(new IHistorySelectedDelegate<>() {
+        templateGroupSelected = new TemplateGroupSelector(new IHistorySelectedDelegate<>() {
 
             @Override
             public void selectItem(String item) {
@@ -670,6 +671,11 @@ public class GenerateConfigDialog extends DialogWrapper {
         });
         templateGroupSelected.setEditable(true);
         templateGroupSelected.addItemListener(e -> refreshGenerateTemplatePanel());
+        templateGroupSelected.setOnDeleteCallback(() -> {
+            refreshTemplateGroupSelect();
+            refreshGenerateTemplatePanel();
+            return null;
+        });
         typeMappingSelected = new SelectionHistoryComboBox(new IHistorySelectedDelegate<>() {
             @Override
             public void selectItem(String item) {
@@ -696,7 +702,7 @@ public class GenerateConfigDialog extends DialogWrapper {
 
         this.event = event;
         this.project = event.getProject();
-        scopeState = new ScopeState(project, pathInput, templateGroupSelected, typeMappingSelected);
+        scopeState = new ScopeState(project, pathInput, templateGroupSelected.getComboBox(), typeMappingSelected);
         setModal(true);
 
         // 设置窗口自适应大小
