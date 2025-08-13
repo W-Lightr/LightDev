@@ -2,7 +2,7 @@
 
 ![Plugin Version](https://img.shields.io/badge/version-0.0.1-blue)
 ![IntelliJ Platform](https://img.shields.io/badge/IntelliJ%20Platform-2024.2.5-orange)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 
 一个强大的 IntelliJ IDEA 插件，专为提高开发效率而设计。LightDev 提供了智能的代码生成功能，特别是基于数据库表结构的模板代码生成，帮助开发者快速构建项目骨架。
 
@@ -200,7 +200,7 @@ import lombok.Data;
 
 ## 📄 许可证
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+本项目采用 Apache License 2.0 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
 
 ## 🔗 相关链接
 
