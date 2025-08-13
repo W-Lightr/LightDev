@@ -5,8 +5,9 @@
     <vendor>Lightr</vendor>
     <description><![CDATA[
         <p>
-        @Lightr 自定义的模板生成器定义的模板生成器定义的模板生成器定义的模板生成器
+        一个强大的 IntelliJ IDEA 插件，专为提高开发效率而设计。LightDev 提供了智能的代码生成功能，特别是基于数据库表结构的模板代码生成，帮助开发者快速构建项目骨架。
         </p>
+
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>

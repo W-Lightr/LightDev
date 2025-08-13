@@ -4,7 +4,9 @@
 ![IntelliJ Platform](https://img.shields.io/badge/IntelliJ%20Platform-2024.2.5-orange)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 
+<!-- Plugin description -->
 一个强大的 IntelliJ IDEA 插件，专为提高开发效率而设计。LightDev 提供了智能的代码生成功能，特别是基于数据库表结构的模板代码生成，帮助开发者快速构建项目骨架。
+<!-- Plugin description end -->
 
 ## ✨ 主要功能
 
