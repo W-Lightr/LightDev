@@ -274,8 +274,20 @@ public class GenerateConfigDialog extends DialogWrapper {
         templateGroupSelected.removeAllItems();
 
         var globalHistoryState = HistoryStateService.getInstance().getState();
+        
+        // 用于跟踪已添加的模板，避免重复
+        Set<String> addedTemplates = new HashSet<>();
 
-        // 添加内置模板选项
+        // 首先添加历史使用的模板路径
+        globalHistoryState.getHistoryUsePath().stream().sorted().forEachOrdered(input -> {
+            String member = input.getMember();
+            if (member != null && !addedTemplates.contains(member)) {
+                templateGroupSelected.insertItemAt(member, 0);
+                addedTemplates.add(member);
+            }
+        });
+
+        // 添加内置模板选项（如果不在历史记录中）
         try {
             URL resourceUrl = getClass().getClassLoader().getResource("ftl");
             if (resourceUrl != null) {
@@ -297,8 +309,11 @@ public class GenerateConfigDialog extends DialogWrapper {
                         walk.filter(Files::isDirectory)
                             .filter(path -> !path.equals(resourcePath))
                             .forEach(path -> {
-                                String folderName = path.getFileName().toString();
-                                templateGroupSelected.insertItemAt("内置：" + folderName, 0);
+                                String folderName = "内置：" + path.getFileName().toString();
+                                if (!addedTemplates.contains(folderName)) {
+                                    templateGroupSelected.insertItemAt(folderName, 0);
+                                    addedTemplates.add(folderName);
+                                }
                             });
                     }
                 } else {
@@ -308,8 +323,11 @@ public class GenerateConfigDialog extends DialogWrapper {
                         walk.filter(Files::isDirectory)
                             .filter(path -> !path.equals(resourcePath))
                             .forEach(path -> {
-                                String folderName = path.getFileName().toString();
-                                templateGroupSelected.insertItemAt("内置：" + folderName, 0);
+                                String folderName = "内置：" + path.getFileName().toString();
+                                if (!addedTemplates.contains(folderName)) {
+                                    templateGroupSelected.insertItemAt(folderName, 0);
+                                    addedTemplates.add(folderName);
+                                }
                             });
                     }
                 }
@@ -317,9 +335,6 @@ public class GenerateConfigDialog extends DialogWrapper {
         } catch (Exception e) {
             StaticUtil.showWarningNotification("内置模板加载失败", e.getMessage(), project, NotificationType.ERROR);
         }
-
-        // 添加历史使用的模板路径
-        globalHistoryState.getHistoryUsePath().stream().sorted().forEachOrdered(input -> templateGroupSelected.insertItemAt(input.getMember(), 0));
 
         if (templateGroupSelected.getItemCount() > 0) {
             templateGroupSelected.setSelectedIndex(0);
