@@ -32,6 +32,21 @@ import lightr.ui.components.SelectionHistoryComboBox;
 import lightr.ui.layout.DoubleColumnLayout;
 import lightr.ui.layout.SingleColumnLayout;
 import lightr.util.*;
+
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -99,7 +114,21 @@ public class GenerateConfigDialog extends DialogWrapper {
 
             var fileNameMapTemplate = new HashMap<Path, String>();
             for (var path : scopeState.getSelectedTemplatePath()) {
-                var fileContent = Files.readString(path);
+                String fileContent;
+                // 检查是否是内置模板路径
+                if (scopeState.getTemplateGroupPath() != null && scopeState.getTemplateGroupPath().startsWith("内置模板:")) {
+                    // 从资源中读取内置模板内容
+                    try {
+                        fileContent = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+                    } catch (Exception e) {
+                        StaticUtil.showWarningNotification("读取内置模板失败", e.getMessage(), project, NotificationType.ERROR);
+                        continue;
+                    }
+                } else {
+                    // 从文件系统读取模板内容
+                    fileContent = Files.readString(path);
+                }
+
                 if (fileContent.length() > TemplateUtil.SPLIT_TAG.length() + 1) {
                     fileNameMapTemplate.put(path, fileContent);
                 }
@@ -125,7 +154,14 @@ public class GenerateConfigDialog extends DialogWrapper {
             scopeState.getSelectedTables().stream().map(x -> new TableData(x, dbContext)).forEach(tableData -> {
 
                 fileNameMapTemplate.entrySet().stream().sorted((Map.Entry.comparingByKey())).forEachOrdered(entry -> {
-                    var templatePath = entry.getKey().toString().replace(StringUtil.defaultIfEmpty(scopeState.getTemplateGroupPath(), ""), "");
+                    String templatePath;
+                    if (scopeState.getTemplateGroupPath() != null && scopeState.getTemplateGroupPath().startsWith("内置：")) {
+                        // 对于内置模板，使用文件名作为模板路径
+                        templatePath = entry.getKey().getFileName().toString();
+                    } else {
+                        // 对于文件系统模板，使用相对路径
+                        templatePath = entry.getKey().toString().replace(StringUtil.defaultIfEmpty(scopeState.getTemplateGroupPath(), ""), "");
+                    }
 
                     try {
                         // region process template context
@@ -158,7 +194,14 @@ public class GenerateConfigDialog extends DialogWrapper {
                         var fileName = StringUtil.isEmpty(templateConfig.getFileName())
                                 ? entry.getKey().getFileName().toString() : templateConfig.getFileName();
 
-                        var templateName = StaticUtil.extractDirAfterName(entry.getKey().toString(), String.valueOf(scopeState.getTemplateGroupPath()));
+                        String templateName;
+                        if (scopeState.getTemplateGroupPath() != null && scopeState.getTemplateGroupPath().startsWith("内置：")) {
+                            // 对于内置模板，使用文件名作为模板名称
+                            templateName = entry.getKey().getFileName().toString();
+                        } else {
+                            // 对于文件系统模板，提取相对路径
+                            templateName = StaticUtil.extractDirAfterName(entry.getKey().toString(), String.valueOf(scopeState.getTemplateGroupPath()));
+                        }
                         var customPath = scopeState.getTemplateCustomPath(templateName);
 
                         String basePath = scopeState.getPath();
@@ -167,10 +210,17 @@ public class GenerateConfigDialog extends DialogWrapper {
                         if (customPath != null) {
                             relativePath = customPath;
                         } else if (StringUtil.isEmpty(templateConfig.getDir())) {
-                            relativePath = StaticUtil.extractDirAfterName(
-                                templatePath.substring(0, templatePath.lastIndexOf(FileSystems.getDefault().getSeparator()) + 1),
-                                String.valueOf(scopeState.getTemplateGroupPath())
-                            );
+                            if (scopeState.getTemplateGroupPath() != null && scopeState.getTemplateGroupPath().startsWith("内置模板:")) {
+                                // 对于内置模板，使用内置模板名称作为相对路径
+                                String builtinTemplateName = scopeState.getTemplateGroupPath().substring("内置模板:".length());
+                                relativePath = builtinTemplateName;
+                            } else {
+                                // 对于文件系统模板，提取相对路径
+                                relativePath = StaticUtil.extractDirAfterName(
+                                    templatePath.substring(0, templatePath.lastIndexOf(FileSystems.getDefault().getSeparator()) + 1),
+                                    String.valueOf(scopeState.getTemplateGroupPath())
+                                );
+                            }
                         } else {
                             relativePath = templateConfig.getDir();
                         }
@@ -225,6 +275,50 @@ public class GenerateConfigDialog extends DialogWrapper {
 
         var globalHistoryState = HistoryStateService.getInstance().getState();
 
+        // 添加内置模板选项
+        try {
+            URL resourceUrl = getClass().getClassLoader().getResource("ftl");
+            if (resourceUrl != null) {
+                URI uri = resourceUrl.toURI();
+                Path resourcePath;
+
+                if ("jar".equals(resourceUrl.getProtocol())) {
+                    // 处理JAR文件中的资源
+                    FileSystem fileSystem;
+                    try {
+                        fileSystem = FileSystems.getFileSystem(uri);
+                    } catch (FileSystemNotFoundException e) {
+                        fileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
+                    }
+                    resourcePath = fileSystem.getPath("/ftl");
+
+                    // 遍历目录获取所有子目录
+                    try (Stream<Path> walk = Files.walk(resourcePath, 1)) {
+                        walk.filter(Files::isDirectory)
+                            .filter(path -> !path.equals(resourcePath))
+                            .forEach(path -> {
+                                String folderName = path.getFileName().toString();
+                                templateGroupSelected.insertItemAt("内置：" + folderName, 0);
+                            });
+                    }
+                } else {
+                    // 处理文件系统中的资源
+                    resourcePath = Paths.get(uri);
+                    try (Stream<Path> walk = Files.walk(resourcePath, 1)) {
+                        walk.filter(Files::isDirectory)
+                            .filter(path -> !path.equals(resourcePath))
+                            .forEach(path -> {
+                                String folderName = path.getFileName().toString();
+                                templateGroupSelected.insertItemAt("内置：" + folderName, 0);
+                            });
+                    }
+                }
+            }
+        } catch (Exception e) {
+            StaticUtil.showWarningNotification("内置模板加载失败", e.getMessage(), project, NotificationType.ERROR);
+        }
+
+        // 添加历史使用的模板路径
         globalHistoryState.getHistoryUsePath().stream().sorted().forEachOrdered(input -> templateGroupSelected.insertItemAt(input.getMember(), 0));
 
         if (templateGroupSelected.getItemCount() > 0) {
@@ -243,6 +337,67 @@ public class GenerateConfigDialog extends DialogWrapper {
         }
 
         var globalHistoryState = HistoryStateService.getInstance().getState();
+
+        // 检查是否是内置模板路径标识
+        if (templatePath.startsWith("内置：")) {
+            String builtinTemplateName = templatePath.substring("内置：".length());
+            // 获取内置模板路径
+            URL resourceUrl = getClass().getClassLoader().getResource("ftl/" + builtinTemplateName);
+            if (resourceUrl != null) {
+                try {
+                    var templateFiles = new ArrayList<File>();
+                    var paths = new HashMap<String, Path>();
+                    var fileNames = new ArrayList<String>();
+
+                    // 使用资源URL获取内置模板文件
+                    URI uri = resourceUrl.toURI();
+                    Path resourcePath;
+
+                    if ("jar".equals(resourceUrl.getProtocol())) {
+                        // 处理JAR文件中的资源
+                        FileSystem fileSystem;
+                        try {
+                            fileSystem = FileSystems.getFileSystem(uri);
+                        } catch (FileSystemNotFoundException e) {
+                            fileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
+                        }
+                        resourcePath = fileSystem.getPath("/ftl/" + builtinTemplateName);
+
+                        // 遍历目录获取所有ftl文件
+                        try (Stream<Path> walk = Files.walk(resourcePath)) {
+                            walk.filter(Files::isRegularFile)
+                                .forEach(path -> {
+                                    String fileName = path.getFileName().toString();
+                                    fileNames.add(fileName);
+                                    paths.put(fileName, path);
+                                });
+                        }
+                    } else {
+                        // 处理文件系统中的资源
+                        resourcePath = Paths.get(uri);
+                        try (Stream<Path> walk = Files.walk(resourcePath)) {
+                            walk.filter(Files::isRegularFile)
+                                .forEach(path -> {
+                                    String fileName = path.getFileName().toString();
+                                    fileNames.add(fileName);
+                                    paths.put(fileName, path);
+                                });
+                        }
+                    }
+
+                    // 处理内置模板文件
+                    processTemplateFiles(fileNames, paths);
+                    return;
+                } catch (Exception e) {
+                    StaticUtil.showWarningNotification("内置模板加载失败", e.getMessage(), project, NotificationType.ERROR);
+                }
+            }
+
+            globalHistoryState.getHistoryUsePath().remove(new ScoredMember(templatePath));
+            return;
+        }
+
+        // 处理文件系统中的模板
         var dir = Path.of(templatePath);
         var file = dir.toFile();
         if (!file.exists()) {
@@ -261,6 +416,8 @@ public class GenerateConfigDialog extends DialogWrapper {
                 .peek(x -> paths.put(StaticUtil.extractDirAfterName(x.getPath(), dir.toString()), x.toPath()))
                 .map(x -> StaticUtil.extractDirAfterName(x.getPath(), dir.toString()))
                 .collect(Collectors.toList());
+
+        processTemplateFiles(fileNames, paths);
 
         // 获取保存的模板路径
         var currentGlobalState = GlobalStateService.getInstance().getState();
@@ -331,6 +488,69 @@ public class GenerateConfigDialog extends DialogWrapper {
 
         scopeState.setTemplateFilePath(paths, tables);
 //            Objects.requireNonNull(scopeState.getTemplateGroup()).setSelectedItem(templatePath);
+    }
+
+    /**
+     * 处理模板文件
+     * @param fileNames 文件名列表
+     * @param paths 文件路径映射
+     */
+    private void processTemplateFiles(List<String> fileNames, Map<String, Path> paths) {
+        // 获取保存的模板路径
+        var currentGlobalState = GlobalStateService.getInstance().getState();
+        var savedPaths = currentGlobalState.getTemplatePaths();
+
+        var tables = new ListCheckboxComponent(
+            new DoubleColumnLayout(),
+            fileNames,
+            true,
+            (templateName, customPath) -> {
+                scopeState.setTemplateCustomPath(templateName, customPath);
+                // 保存模板路径
+                var newTemplatePath = new TemplatePath(templateName, customPath);
+                currentGlobalState.getTemplatePaths().remove(newTemplatePath);
+                if (customPath != null && !customPath.isBlank()) {
+                    currentGlobalState.getTemplatePaths().add(newTemplatePath);
+                }
+                GlobalStateService.getInstance().loadState(currentGlobalState);
+                return Unit.INSTANCE;
+            }
+        );
+
+        // 设置已保存的路径
+        for (var savedPath : new ArrayList<>(savedPaths)) {
+            if (savedPath.getTemplateName() != null && savedPath.getPath() != null) {
+                scopeState.setTemplateCustomPath(savedPath.getTemplateName(), savedPath.getPath());
+                // 在界面上显示已保存的路径
+                var componentIndex = tables.getCheckBoxList().stream()
+                        .filter(x -> x.getText().equals(savedPath.getTemplateName()))
+                        .findFirst()
+                        .map(x -> ((Container) tables).getComponentZOrder(x) + 1)
+                        .orElse(-1);
+                if (componentIndex != -1) {
+                    var component = ((Container) tables).getComponent(componentIndex);
+                    if (component instanceof JBTextField) {
+                        ((JBTextField) component).setText(savedPath.getPath());
+                    }
+                }
+            }
+        }
+
+        for (var actionListener : selectAllButton.getActionListeners()) {
+            selectAllButton.removeActionListener(actionListener);
+        }
+        selectAllButton.addActionListener(e -> Objects.requireNonNull(tables.getCheckBoxList()).forEach(x -> x.setSelected(true)));
+
+        for (var actionListener : clearSelectAllButton.getActionListeners()) {
+            clearSelectAllButton.removeActionListener(actionListener);
+        }
+        clearSelectAllButton.addActionListener(e -> Objects.requireNonNull(tables.getCheckBoxList()).forEach(x -> x.setSelected(false)));
+
+        // The ListCheckboxComponent now implements Scrollable, so it can be set as the viewport view directly.
+        // This allows the scroll pane to correctly manage the component's width.
+        generateTemplatePanel.setViewportView(tables);
+
+        scopeState.setTemplateFilePath(paths, tables);
 
     }
 
