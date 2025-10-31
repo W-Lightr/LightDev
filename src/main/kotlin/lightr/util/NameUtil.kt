@@ -77,6 +77,29 @@ object NameUtil {
     }
 
     /**
+     * Lower Case: 所有字母小写
+     */
+    @JvmStatic
+    fun toLowerCase(input: String?): String? {
+        if (input.isNullOrEmpty()) {
+            return input
+        }
+        val matcher = WordMatch.matcher(input)
+        val sb = StringBuilder()
+        var firstMatch = true
+
+        while (matcher.find()) {
+            val match = matcher.group()
+            if (match.isNotEmpty()) {
+                sb.append(match.lowercase(Locale.getDefault()))
+                firstMatch = false
+            }
+        }
+
+        return sb.toString()
+    }
+
+    /**
      * Kebab Case: 所有字母小写，单词之间用连字符连接
      */
     @JvmStatic

@@ -4,6 +4,7 @@ import com.intellij.database.model.DasNamed;
 import com.intellij.database.model.DasTable;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.fileChooser.FileChooser;
 import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
@@ -262,6 +263,14 @@ public class GenerateConfigDialog extends DialogWrapper {
             });
 
             if (hasCloseDialog.get()) {
+                // 刷新虚拟文件系统,让IDEA从磁盘重新加载文件
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    VirtualFile baseDir = project.getBaseDir();
+                    if (baseDir != null) {
+                        baseDir.refresh(false, true);
+                    }
+                });
+
                 super.doOKAction();
             }
 
@@ -275,7 +284,7 @@ public class GenerateConfigDialog extends DialogWrapper {
         templateGroupSelected.removeAllItems();
 
         var globalHistoryState = HistoryStateService.getInstance().getState();
-        
+
         // 用于跟踪已添加的模板，避免重复
         Set<String> addedTemplates = new HashSet<>();
 
